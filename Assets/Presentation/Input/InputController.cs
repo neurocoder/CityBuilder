@@ -20,15 +20,16 @@ namespace CityBuilder.Presentation.Input
         private IBuildingRepository? _repo;
         private IEventBus? _events;
         private UI.HudPresenter? _hudPresenter;
+        private Presenters.BuildingPresenter? _buildingPresenter;
 
         private BuildingType? _selectedType;
         private Guid? _selectedBuildingId;
         private bool _isMoveMode;
 
         [Inject]
-        public void Construct(PlaceBuildingUseCase place, MoveBuildingUseCase move, RemoveBuildingUseCase remove, UpgradeBuildingUseCase upgrade, IBuildingRepository repo, IEventBus events, CityBuilder.Presentation.UI.HudPresenter hudPresenter)
+        public void Construct(PlaceBuildingUseCase place, MoveBuildingUseCase move, RemoveBuildingUseCase remove, UpgradeBuildingUseCase upgrade, IBuildingRepository repo, IEventBus events, CityBuilder.Presentation.UI.HudPresenter hudPresenter, CityBuilder.Presentation.Presenters.BuildingPresenter buildingPresenter)
         {
-            _placeUseCase = place; _moveUseCase = move; _removeUseCase = remove; _upgradeUseCase = upgrade; _repo = repo; _events = events; _hudPresenter = hudPresenter;
+            _placeUseCase = place; _moveUseCase = move; _removeUseCase = remove; _upgradeUseCase = upgrade; _repo = repo; _events = events; _hudPresenter = hudPresenter; _buildingPresenter = buildingPresenter;
         }
 
         private void Update()
@@ -59,6 +60,7 @@ namespace CityBuilder.Presentation.Input
             _isMoveMode = false;
             _selectedBuildingId = null;
             _hudPresenter?.SelectBuildingType(type);
+            _buildingPresenter?.SetSelectedBuilding(null);
         }
         private async void HandleLeftClickAsync(int x, int y)
         {
@@ -88,6 +90,7 @@ namespace CityBuilder.Presentation.Input
             {
                 _selectedBuildingId = building.Id;
                 _hudPresenter?.SetSelectedBuilding(building.Id);
+                _buildingPresenter?.SetSelectedBuilding(building.Id);
                 Debug.Log($"Selected building at position ({x}, {y})");
                 return;
             }
@@ -105,6 +108,11 @@ namespace CityBuilder.Presentation.Input
             {
                 _isMoveMode = !_isMoveMode;
                 _selectedType = null;
+                if (!_isMoveMode)
+                {
+                    _selectedBuildingId = null;
+                    _buildingPresenter?.SetSelectedBuilding(null);
+                }
                 Debug.Log(_isMoveMode ? "Move mode ON - Click on empty cell to move building" : "Move mode OFF");
             }
             else
@@ -130,6 +138,8 @@ namespace CityBuilder.Presentation.Input
             if (_selectedBuildingId.HasValue && _removeUseCase != null)
             {
                 await _removeUseCase.ExecuteAsync(_selectedBuildingId.Value);
+                _selectedBuildingId = null;
+                _buildingPresenter?.SetSelectedBuilding(null);
             }
         }
     }

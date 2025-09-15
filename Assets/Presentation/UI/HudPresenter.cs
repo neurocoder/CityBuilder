@@ -22,6 +22,7 @@ namespace CityBuilder.Presentation.UI
         private MoveBuildingUseCase? _moveUseCase;
         private RemoveBuildingUseCase? _removeUseCase;
         private UpgradeBuildingUseCase? _upgradeUseCase;
+        private Presenters.BuildingPresenter? _buildingPresenter;
         
         private UIDocument? _uiDocument;
         private Label? _goldLabel;
@@ -43,7 +44,7 @@ namespace CityBuilder.Presentation.UI
 
         [Inject]
         public void Construct(IResourceRepository resources, SaveLoadService saveLoad, IEventBus events, IBuildingRepository repo, 
-            PlaceBuildingUseCase placeUseCase, MoveBuildingUseCase moveUseCase, RemoveBuildingUseCase removeUseCase, UpgradeBuildingUseCase upgradeUseCase)
+            PlaceBuildingUseCase placeUseCase, MoveBuildingUseCase moveUseCase, RemoveBuildingUseCase removeUseCase, UpgradeBuildingUseCase upgradeUseCase, CityBuilder.Presentation.Presenters.BuildingPresenter buildingPresenter)
         { 
             _resources = resources; 
             _saveLoad = saveLoad; 
@@ -53,6 +54,7 @@ namespace CityBuilder.Presentation.UI
             _moveUseCase = moveUseCase;
             _removeUseCase = removeUseCase;
             _upgradeUseCase = upgradeUseCase;
+            _buildingPresenter = buildingPresenter;
         }
 
         private void Awake()
@@ -109,6 +111,7 @@ namespace CityBuilder.Presentation.UI
             _selectedType = type;
             _isMoveMode = false;
             _selectedBuildingId = null;
+            _buildingPresenter?.SetSelectedBuilding(null);
             UpdateUI();
             ShowNotification($"Selected {type} for building");
         }
@@ -119,6 +122,11 @@ namespace CityBuilder.Presentation.UI
             {
                 _isMoveMode = !_isMoveMode;
                 _selectedType = null;
+                if (!_isMoveMode)
+                {
+                    _selectedBuildingId = null;
+                    _buildingPresenter?.SetSelectedBuilding(null);
+                }
                 UpdateUI();
                 ShowNotification(_isMoveMode ? "Move mode ON - Click on empty cell to move building" : "Move mode OFF");
             }
@@ -145,6 +153,8 @@ namespace CityBuilder.Presentation.UI
             if (_selectedBuildingId.HasValue && _removeUseCase != null)
             {
                 await _removeUseCase.ExecuteAsync(_selectedBuildingId.Value);
+                _selectedBuildingId = null;
+                _buildingPresenter?.SetSelectedBuilding(null);
             }
             else
             {
@@ -209,6 +219,7 @@ namespace CityBuilder.Presentation.UI
         public void SetSelectedBuilding(Guid? buildingId)
         {
             _selectedBuildingId = buildingId;
+            _buildingPresenter?.SetSelectedBuilding(buildingId);
             UpdateUI();
         }
 
@@ -216,6 +227,7 @@ namespace CityBuilder.Presentation.UI
         {
             _selectedBuildingId = null;
             _isMoveMode = false;
+            _buildingPresenter?.SetSelectedBuilding(null);
             UpdateUI();
             ShowNotification("Building removed");
         }
