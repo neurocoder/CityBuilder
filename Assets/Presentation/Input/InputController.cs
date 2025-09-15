@@ -33,6 +33,8 @@ namespace CityBuilder.Presentation.Input
 
         private void Update()
         {
+            if (Keyboard.current == null) return;
+            
             if (Keyboard.current.digit1Key.wasPressedThisFrame) SelectType(BuildingType.House);
             if (Keyboard.current.digit2Key.wasPressedThisFrame) SelectType(BuildingType.Farm);
             if (Keyboard.current.digit3Key.wasPressedThisFrame) SelectType(BuildingType.Mine);
@@ -63,25 +65,39 @@ namespace CityBuilder.Presentation.Input
             var pos = new GridPosition(x, y);
             var b = _repo?.FindByPosition(pos);
             
-            if (b != null)
+            // Handle move mode first
+            if (_isMoveMode && _selectedBuildingId.HasValue)
             {
-                if (_isMoveMode && _selectedBuildingId.HasValue)
+                if (b == null) // Only move to empty cells
                 {
-                    // Move selected building to new position
+                    // Move selected building to new empty position
                     _moveUseCase?.Execute(_selectedBuildingId.Value, pos);
                     _isMoveMode = false;
                     _selectedBuildingId = null;
+                    Debug.Log($"Moved building to position ({x}, {y})");
                 }
                 else
                 {
-                    // Select building
-                    _selectedBuildingId = b.Id;
-                    _hudPresenter?.SetSelectedBuilding(b.Id);
+                    Debug.Log("Cannot move building to occupied cell");
                 }
                 return;
             }
             
-            if (_selectedType.HasValue) _placeUseCase?.Execute(_selectedType.Value, pos);
+            if (b != null)
+            {
+                // Select building
+                _selectedBuildingId = b.Id;
+                _hudPresenter?.SetSelectedBuilding(b.Id);
+                Debug.Log($"Selected building at position ({x}, {y})");
+                return;
+            }
+            
+            // Place new building if type is selected
+            if (_selectedType.HasValue) 
+            {
+                _placeUseCase?.Execute(_selectedType.Value, pos);
+                Debug.Log($"Placed {_selectedType.Value} at position ({x}, {y})");
+            }
         }
 
         private void ToggleMoveMode()

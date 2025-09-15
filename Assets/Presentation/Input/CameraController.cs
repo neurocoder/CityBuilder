@@ -1,4 +1,5 @@
 using UnityEngine;
+using UnityEngine.InputSystem;
 
 namespace CityBuilder.Presentation.Input
 {
@@ -15,14 +16,14 @@ namespace CityBuilder.Presentation.Input
         [SerializeField] private float maxZoom = 20f;
 
         private Camera _camera;
-        private Vector3 _dragOrigin;
+        private Vector2 _dragOrigin;
+        private bool _isDragging;
 
         private void Awake()
         {
             _camera = GetComponent<Camera>();
             if (!_camera.orthographic)
             {
-                Debug.LogWarning("CameraController: expected orthographic camera, switching.");
                 _camera.orthographic = true;
             }
         }
@@ -36,31 +37,72 @@ namespace CityBuilder.Presentation.Input
 
         private void HandleKeyboardMove()
         {
-            float h = UnityEngine.Input.GetAxis("Horizontal");
-            float v = UnityEngine.Input.GetAxis("Vertical");
-            Vector3 dir = new(h, v, 0f);
-            transform.position += dir * (moveSpeed * Time.deltaTime);
+            Vector2 moveInput = Vector2.zero;
+
+            if (Keyboard.current != null)
+            {
+                if (Keyboard.current.wKey.isPressed || Keyboard.current.upArrowKey.isPressed)
+                    moveInput.y += 1f;
+                if (Keyboard.current.sKey.isPressed || Keyboard.current.downArrowKey.isPressed)
+                    moveInput.y -= 1f;
+                if (Keyboard.current.aKey.isPressed || Keyboard.current.leftArrowKey.isPressed)
+                    moveInput.x -= 1f;
+                if (Keyboard.current.dKey.isPressed || Keyboard.current.rightArrowKey.isPressed)
+                    moveInput.x += 1f;
+            }
+
+            if (moveInput.magnitude > 0)
+            {
+                Vector3 dir = new(moveInput.x, moveInput.y, 0f);
+                transform.position += dir * (moveSpeed * Time.deltaTime);
+            }
         }
 
         private void HandleMouseDrag()
         {
+            if (Mouse.current == null) return;
+
             // Middle mouse button or right mouse button for camera drag
-            if (UnityEngine.Input.GetMouseButtonDown(2) || UnityEngine.Input.GetMouseButtonDown(1))
-                _dragOrigin = UnityEngine.Input.mousePosition;
+            bool dragButtonPressed = Mouse.current.middleButton.isPressed || Mouse.current.rightButton.isPressed;
 
-            if (!UnityEngine.Input.GetMouseButton(2) && !UnityEngine.Input.GetMouseButton(1)) return;
+            if (Mouse.current.middleButton.wasPressedThisFrame || Mouse.current.rightButton.wasPressedThisFrame)
+            {
+                _dragOrigin = Mouse.current.position.ReadValue();
+                _isDragging = true;
+                return;
+            }
 
-            Vector3 pos = _camera.ScreenToViewportPoint(UnityEngine.Input.mousePosition - _dragOrigin);
-            Vector3 move = new Vector3(-pos.x * dragSpeed, -pos.y * dragSpeed, 0);
-            transform.Translate(move, Space.World);
+            if (!dragButtonPressed)
+            {
+                _isDragging = false;
+                return;
+            }
+
+            if (!_isDragging) return;
+
+            Vector2 currentMousePos = Mouse.current.position.ReadValue();
+            Vector2 delta = currentMousePos - _dragOrigin;
+
+            if (delta.magnitude > 0.1f)
+            {
+                Vector3 worldDelta = _camera.ScreenToWorldPoint(new Vector3(delta.x, delta.y, _camera.nearClipPlane)) -
+                                    _camera.ScreenToWorldPoint(new Vector3(0, 0, _camera.nearClipPlane));
+
+                transform.Translate(-worldDelta * dragSpeed, Space.World);
+                _dragOrigin = currentMousePos;
+            }
         }
 
         private void HandleZoom()
         {
-            float scroll = UnityEngine.Input.GetAxis("Mouse ScrollWheel");
+            if (Mouse.current == null) return;
+
+            Vector2 scrollDelta = Mouse.current.scroll.ReadValue();
+            float scroll = scrollDelta.y;
+
             if (Mathf.Abs(scroll) > 0.01f)
             {
-                float size = _camera.orthographicSize - scroll * zoomSpeed;
+                float size = _camera.orthographicSize - scroll * zoomSpeed * 0.01f;
                 _camera.orthographicSize = Mathf.Clamp(size, minZoom, maxZoom);
             }
         }
