@@ -1,6 +1,8 @@
 using CityBuilder.Application.Interfaces;
 using CityBuilder.Application.Events;
+using CityBuilder.Application.DTOs;
 using CityBuilder.Domain.Rules;
+using System;
 
 namespace CityBuilder.Application.UseCases
 {
@@ -12,7 +14,7 @@ namespace CityBuilder.Application.UseCases
 
         public UpgradeBuildingUseCase(IBuildingRepository repo, IResourceRepository resources, IEventBus events) { _repo = repo; _resources = resources; _events = events; }
 
-        public bool Execute(System.Guid id)
+        public bool Execute(Guid id)
         {
             var b = _repo.FindById(id);
             if (b == null) return false;
@@ -23,5 +25,7 @@ namespace CityBuilder.Application.UseCases
             _events.Publish(new BuildingUpgradedEvent(b));
             return true;
         }
+
+        public bool Execute(UpgradeBuildingDTO dto) { return Execute(dto.BuildingId); }
     }
 }

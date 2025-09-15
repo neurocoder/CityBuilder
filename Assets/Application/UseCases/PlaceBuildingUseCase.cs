@@ -1,5 +1,6 @@
 using CityBuilder.Application.Interfaces;
 using CityBuilder.Application.Events;
+using CityBuilder.Application.DTOs;
 using CityBuilder.Domain.Entities;
 using CityBuilder.Domain.Rules;
 using System;
@@ -27,6 +28,12 @@ namespace CityBuilder.Application.UseCases
             _repo.Add(b);
             _events.Publish(new BuildingPlacedEvent(b));
             return true;
+        }
+
+        public bool Execute(PlaceBuildingDTO dto)
+        {
+            var pos = new GridPosition(dto.X, dto.Y);
+            return Execute(dto.Type, pos);
         }
     }
 }

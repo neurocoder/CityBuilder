@@ -1,5 +1,6 @@
 using CityBuilder.Application.Interfaces;
 using CityBuilder.Application.Events;
+using CityBuilder.Application.DTOs;
 using CityBuilder.Domain.Entities;
 using System;
 
@@ -24,6 +25,12 @@ namespace CityBuilder.Application.UseCases
             b.MoveTo(newPos);
             _events.Publish(new BuildingMovedEvent(b));
             return true;
+        }
+
+        public bool Execute(MoveBuildingDTO dto)
+        {
+            var newPos = new GridPosition(dto.NewX, dto.NewY);
+            return Execute(dto.BuildingId, newPos);
         }
     }
 }

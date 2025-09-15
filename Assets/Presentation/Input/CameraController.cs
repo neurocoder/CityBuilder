@@ -44,10 +44,11 @@ namespace CityBuilder.Presentation.Input
 
         private void HandleMouseDrag()
         {
-            if (UnityEngine.Input.GetMouseButtonDown(2))
+            // Middle mouse button or right mouse button for camera drag
+            if (UnityEngine.Input.GetMouseButtonDown(2) || UnityEngine.Input.GetMouseButtonDown(1))
                 _dragOrigin = UnityEngine.Input.mousePosition;
 
-            if (!UnityEngine.Input.GetMouseButton(2)) return;
+            if (!UnityEngine.Input.GetMouseButton(2) && !UnityEngine.Input.GetMouseButton(1)) return;
 
             Vector3 pos = _camera.ScreenToViewportPoint(UnityEngine.Input.mousePosition - _dragOrigin);
             Vector3 move = new Vector3(-pos.x * dragSpeed, -pos.y * dragSpeed, 0);

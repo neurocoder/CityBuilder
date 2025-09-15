@@ -1,11 +1,46 @@
 <?xml version="1.0" encoding="utf-8"?>
 <engine:UXML xmlns:ui="UnityEngine.UIElements" xmlns:engine="UnityEngine.UIElements">
   <ui:VisualElement name="root" style="flex-direction:column; padding:10px;">
-    <ui:Label name="goldLabel">Gold: 0</ui:Label>
-    <ui:Button name="saveButton"><ui:Label>Save</ui:Label></ui:Button>
-    <ui:Button name="loadButton"><ui:Label>Load</ui:Label></ui:Button>
-    <ui:VisualElement style="flex-direction:row; margin-top:8px;">
-      <ui:Label>Hotkeys: 1/2/3 to select building</ui:Label>
+    <!-- Top Panel - Resources -->
+    <ui:VisualElement name="topPanel" style="flex-direction:row; justify-content:space-between; margin-bottom:10px;">
+      <ui:Label name="goldLabel" style="font-size:18px; color:yellow;">Gold: 0</ui:Label>
+      <ui:VisualElement style="flex-direction:row;">
+        <ui:Button name="saveButton" style="margin-right:5px;"><ui:Label>Save</ui:Label></ui:Button>
+        <ui:Button name="loadButton"><ui:Label>Load</ui:Label></ui:Button>
+      </ui:VisualElement>
+    </ui:VisualElement>
+
+    <!-- Building Selection Panel -->
+    <ui:VisualElement name="buildingPanel" style="flex-direction:row; margin-bottom:10px; background-color:rgba(0,0,0,0.5); padding:5px;">
+      <ui:Label text="Buildings:" style="margin-right:10px; color:white;"/>
+      <ui:Button name="houseButton" style="margin-right:5px; background-color:rgba(0,100,0,0.8);"><ui:Label>House (1)</ui:Label></ui:Button>
+      <ui:Button name="farmButton" style="margin-right:5px; background-color:rgba(0,100,0,0.8);"><ui:Label>Farm (2)</ui:Label></ui:Button>
+      <ui:Button name="mineButton" style="background-color:rgba(0,100,0,0.8);"><ui:Label>Mine (3)</ui:Label></ui:Button>
+    </ui:VisualElement>
+
+    <!-- Building Properties Panel -->
+    <ui:VisualElement name="propertiesPanel" style="background-color:rgba(0,0,0,0.7); padding:10px; margin-bottom:10px;">
+      <ui:Label name="selectedBuildingLabel" text="No building selected" style="color:white; font-size:16px; margin-bottom:5px;"/>
+      <ui:VisualElement name="buildingActions" style="flex-direction:row;">
+        <ui:Button name="moveButton" style="margin-right:5px; background-color:rgba(0,0,100,0.8);"><ui:Label>Move (M)</ui:Label></ui:Button>
+        <ui:Button name="upgradeButton" style="margin-right:5px; background-color:rgba(100,0,100,0.8);"><ui:Label>Upgrade (U)</ui:Label></ui:Button>
+        <ui:Button name="deleteButton" style="background-color:rgba(100,0,0,0.8);"><ui:Label>Delete (Del)</ui:Label></ui:Button>
+      </ui:VisualElement>
+    </ui:VisualElement>
+
+    <!-- Notifications Panel -->
+    <ui:VisualElement name="notificationsPanel" style="background-color:rgba(0,0,0,0.5); padding:5px;">
+      <ui:Label name="notificationLabel" text="" style="color:white; font-size:14px;"/>
+    </ui:VisualElement>
+
+    <!-- Hotkeys Help -->
+    <ui:VisualElement style="flex-direction:column; margin-top:10px;">
+      <ui:Label text="Hotkeys:" style="color:white; font-size:12px;"/>
+      <ui:Label text="1/2/3 - Select building type" style="color:white; font-size:12px;"/>
+      <ui:Label text="M - Toggle move mode" style="color:white; font-size:12px;"/>
+      <ui:Label text="U - Upgrade selected building" style="color:white; font-size:12px;"/>
+      <ui:Label text="Del - Delete selected building" style="color:white; font-size:12px;"/>
+      <ui:Label text="Right click - Camera drag" style="color:white; font-size:12px;"/>
     </ui:VisualElement>
   </ui:VisualElement>
 </engine:UXML>
