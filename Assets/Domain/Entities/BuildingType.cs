@@ -1,0 +1,1 @@
+namespace CityBuilder.Domain.Entities { public enum BuildingType { House, Farm, Mine } }

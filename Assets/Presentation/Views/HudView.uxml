@@ -1,0 +1,11 @@
+<?xml version="1.0" encoding="utf-8"?>
+<engine:UXML xmlns:ui="UnityEngine.UIElements" xmlns:engine="UnityEngine.UIElements">
+  <ui:VisualElement name="root" style="flex-direction:column; padding:10px;">
+    <ui:Label name="goldLabel">Gold: 0</ui:Label>
+    <ui:Button name="saveButton"><ui:Label>Save</ui:Label></ui:Button>
+    <ui:Button name="loadButton"><ui:Label>Load</ui:Label></ui:Button>
+    <ui:VisualElement style="flex-direction:row; margin-top:8px;">
+      <ui:Label>Hotkeys: 1/2/3 to select building</ui:Label>
+    </ui:VisualElement>
+  </ui:VisualElement>
+</engine:UXML>
