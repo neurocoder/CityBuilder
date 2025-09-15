@@ -19,7 +19,7 @@ namespace CityBuilder.Presentation.Input
         private UpgradeBuildingUseCase? _upgradeUseCase;
         private IBuildingRepository? _repo;
         private IEventBus? _events;
-        private CityBuilder.Presentation.UI.HudPresenter? _hudPresenter;
+        private UI.HudPresenter? _hudPresenter;
 
         private BuildingType? _selectedType;
         private Guid? _selectedBuildingId;
@@ -34,13 +34,13 @@ namespace CityBuilder.Presentation.Input
         private void Update()
         {
             if (Keyboard.current == null) return;
-            
+
             if (Keyboard.current.digit1Key.wasPressedThisFrame) SelectType(BuildingType.House);
             if (Keyboard.current.digit2Key.wasPressedThisFrame) SelectType(BuildingType.Farm);
             if (Keyboard.current.digit3Key.wasPressedThisFrame) SelectType(BuildingType.Mine);
             if (Keyboard.current.mKey.wasPressedThisFrame) ToggleMoveMode();
             if (Keyboard.current.uKey.wasPressedThisFrame) UpgradeSelectedBuilding();
-            if (Keyboard.current.deleteKey.wasPressedThisFrame) { if (_selectedBuildingId.HasValue) _removeUseCase?.Execute(_selectedBuildingId.Value); }
+            if (Keyboard.current.deleteKey.wasPressedThisFrame) { if (_selectedBuildingId.HasValue) RemoveSelectedBuildingAsync(); }
 
             var ms = Mouse.current;
             if (ms == null) return;
@@ -50,28 +50,29 @@ namespace CityBuilder.Presentation.Input
             var cellY = Mathf.FloorToInt(world.y);
             if (_tileSelector != null) _tileSelector.transform.position = new Vector3(cellX + 0.5f, cellY + 0.5f, 0f);
 
-            if (ms.leftButton.wasPressedThisFrame) HandleLeftClick(cellX, cellY);
+            if (ms.leftButton.wasPressedThisFrame) HandleLeftClickAsync(cellX, cellY);
         }
 
-        private void SelectType(BuildingType type) 
-        { 
-            _selectedType = type; 
-            _isMoveMode = false; 
-            _selectedBuildingId = null; 
+        private void SelectType(BuildingType type)
+        {
+            _selectedType = type;
+            _isMoveMode = false;
+            _selectedBuildingId = null;
             _hudPresenter?.SelectBuildingType(type);
         }
-        private void HandleLeftClick(int x, int y)
+        private async void HandleLeftClickAsync(int x, int y)
         {
             var pos = new GridPosition(x, y);
-            var b = _repo?.FindByPosition(pos);
-            
-            // Handle move mode first
+            var building = _repo?.FindByPosition(pos);
+
             if (_isMoveMode && _selectedBuildingId.HasValue)
             {
-                if (b == null) // Only move to empty cells
+                if (building == null)
                 {
-                    // Move selected building to new empty position
-                    _moveUseCase?.Execute(_selectedBuildingId.Value, pos);
+                    if (_moveUseCase != null)
+                    {
+                        await _moveUseCase.ExecuteAsync(_selectedBuildingId.Value, pos);
+                    }
                     _isMoveMode = false;
                     _selectedBuildingId = null;
                     Debug.Log($"Moved building to position ({x}, {y})");
@@ -82,20 +83,18 @@ namespace CityBuilder.Presentation.Input
                 }
                 return;
             }
-            
-            if (b != null)
+
+            if (building != null)
             {
-                // Select building
-                _selectedBuildingId = b.Id;
-                _hudPresenter?.SetSelectedBuilding(b.Id);
+                _selectedBuildingId = building.Id;
+                _hudPresenter?.SetSelectedBuilding(building.Id);
                 Debug.Log($"Selected building at position ({x}, {y})");
                 return;
             }
-            
-            // Place new building if type is selected
-            if (_selectedType.HasValue) 
+
+            if (_selectedType.HasValue && _placeUseCase != null)
             {
-                _placeUseCase?.Execute(_selectedType.Value, pos);
+                await _placeUseCase.ExecuteAsync(_selectedType.Value, pos);
                 Debug.Log($"Placed {_selectedType.Value} at position ({x}, {y})");
             }
         }
@@ -105,7 +104,7 @@ namespace CityBuilder.Presentation.Input
             if (_selectedBuildingId.HasValue)
             {
                 _isMoveMode = !_isMoveMode;
-                _selectedType = null; // Clear building type selection
+                _selectedType = null;
                 Debug.Log(_isMoveMode ? "Move mode ON - Click on empty cell to move building" : "Move mode OFF");
             }
             else
@@ -114,15 +113,23 @@ namespace CityBuilder.Presentation.Input
             }
         }
 
-        private void UpgradeSelectedBuilding()
+        private async void UpgradeSelectedBuilding()
         {
-            if (_selectedBuildingId.HasValue)
+            if (_selectedBuildingId.HasValue && _upgradeUseCase != null)
             {
-                _upgradeUseCase?.Execute(_selectedBuildingId.Value);
+                await _upgradeUseCase.ExecuteAsync(_selectedBuildingId.Value);
             }
             else
             {
                 Debug.Log("Select a building first to upgrade");
+            }
+        }
+
+        private async void RemoveSelectedBuildingAsync()
+        {
+            if (_selectedBuildingId.HasValue && _removeUseCase != null)
+            {
+                await _removeUseCase.ExecuteAsync(_selectedBuildingId.Value);
             }
         }
     }

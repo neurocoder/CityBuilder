@@ -2,6 +2,7 @@ using System;
 using UnityEngine;
 using UnityEngine.UIElements;
 using VContainer;
+using R3;
 using CityBuilder.Application.Interfaces;
 using CityBuilder.Application.Services;
 using CityBuilder.Application.Events;
@@ -38,6 +39,7 @@ namespace CityBuilder.Presentation.UI
         private BuildingType? _selectedType;
         private Guid? _selectedBuildingId;
         private bool _isMoveMode;
+        private readonly CompositeDisposable _disposables = new();
 
         [Inject]
         public void Construct(IResourceRepository resources, SaveLoadService saveLoad, IEventBus events, IBuildingRepository repo, 
@@ -58,7 +60,6 @@ namespace CityBuilder.Presentation.UI
             _uiDocument = GetComponent<UIDocument>();
             var root = _uiDocument.rootVisualElement;
             
-            // Get UI elements
             _goldLabel = root.Q<Label>("goldLabel");
             _saveButton = root.Q<Button>("saveButton");
             _loadButton = root.Q<Button>("loadButton");
@@ -71,9 +72,8 @@ namespace CityBuilder.Presentation.UI
             _deleteButton = root.Q<Button>("deleteButton");
             _notificationLabel = root.Q<Label>("notificationLabel");
 
-            // Register button callbacks
-            _saveButton?.RegisterCallback<ClickEvent>(evt => _saveLoad?.Save());
-            _loadButton?.RegisterCallback<ClickEvent>(evt => _saveLoad?.Load());
+            _saveButton?.RegisterCallback<ClickEvent>(evt => SaveGameAsync());
+            _loadButton?.RegisterCallback<ClickEvent>(evt => LoadGameAsync());
             _houseButton?.RegisterCallback<ClickEvent>(evt => SelectBuildingType(BuildingType.House));
             _farmButton?.RegisterCallback<ClickEvent>(evt => SelectBuildingType(BuildingType.Farm));
             _mineButton?.RegisterCallback<ClickEvent>(evt => SelectBuildingType(BuildingType.Mine));
@@ -81,7 +81,13 @@ namespace CityBuilder.Presentation.UI
             _upgradeButton?.RegisterCallback<ClickEvent>(evt => UpgradeSelectedBuilding());
             _deleteButton?.RegisterCallback<ClickEvent>(evt => DeleteSelectedBuilding());
 
-            // Subscribe to events
+            if (_resources != null)
+            {
+                _resources.GoldObservable
+                    .Subscribe(gold => UpdateGoldDisplay(gold))
+                    .AddTo(_disposables);
+            }
+
             _events?.Subscribe<BuildingPlacedEvent>(OnBuildingPlaced);
             _events?.Subscribe<BuildingRemovedEvent>(OnBuildingRemoved);
             _events?.Subscribe<BuildingMovedEvent>(OnBuildingMoved);
@@ -92,10 +98,10 @@ namespace CityBuilder.Presentation.UI
             _events?.Subscribe<GameLoadedEvent>(OnGameLoaded);
         }
 
-        private void Update() 
-        { 
-            if (_goldLabel != null && _resources != null) 
-                _goldLabel.text = $"Gold: {_resources.Gold}"; 
+        private void UpdateGoldDisplay(int gold)
+        {
+            if (_goldLabel != null)
+                _goldLabel.text = $"Gold: {gold}";
         }
 
         public void SelectBuildingType(BuildingType type)
@@ -122,11 +128,11 @@ namespace CityBuilder.Presentation.UI
             }
         }
 
-        private void UpgradeSelectedBuilding()
+        private async void UpgradeSelectedBuilding()
         {
-            if (_selectedBuildingId.HasValue)
+            if (_selectedBuildingId.HasValue && _upgradeUseCase != null)
             {
-                _upgradeUseCase?.Execute(_selectedBuildingId.Value);
+                await _upgradeUseCase.ExecuteAsync(_selectedBuildingId.Value);
             }
             else
             {
@@ -134,11 +140,11 @@ namespace CityBuilder.Presentation.UI
             }
         }
 
-        private void DeleteSelectedBuilding()
+        private async void DeleteSelectedBuilding()
         {
-            if (_selectedBuildingId.HasValue)
+            if (_selectedBuildingId.HasValue && _removeUseCase != null)
             {
-                _removeUseCase?.Execute(_selectedBuildingId.Value);
+                await _removeUseCase.ExecuteAsync(_selectedBuildingId.Value);
             }
             else
             {
@@ -148,12 +154,10 @@ namespace CityBuilder.Presentation.UI
 
         private void UpdateUI()
         {
-            // Update building type buttons
             UpdateButtonState(_houseButton, _selectedType == BuildingType.House);
             UpdateButtonState(_farmButton, _selectedType == BuildingType.Farm);
             UpdateButtonState(_mineButton, _selectedType == BuildingType.Mine);
 
-            // Update selected building info
             if (_selectedBuildingId.HasValue && _repo != null)
             {
                 var building = _repo.FindById(_selectedBuildingId.Value);
@@ -167,7 +171,6 @@ namespace CityBuilder.Presentation.UI
                 _selectedBuildingLabel.text = "No building selected";
             }
 
-            // Update action buttons
             _moveButton.SetEnabled(_selectedBuildingId.HasValue);
             _upgradeButton.SetEnabled(_selectedBuildingId.HasValue);
             _deleteButton.SetEnabled(_selectedBuildingId.HasValue);
@@ -188,7 +191,6 @@ namespace CityBuilder.Presentation.UI
             if (_notificationLabel != null)
             {
                 _notificationLabel.text = message;
-                // Clear notification after 3 seconds
                 Invoke(nameof(ClearNotification), 3f);
             }
         }
@@ -199,7 +201,6 @@ namespace CityBuilder.Presentation.UI
                 _notificationLabel.text = "";
         }
 
-        // Event handlers
         private void OnBuildingPlaced(BuildingPlacedEvent e)
         {
             ShowNotification($"{e.Building.Type} placed successfully!");
@@ -247,6 +248,69 @@ namespace CityBuilder.Presentation.UI
         private void OnGameLoaded(GameLoadedEvent e)
         {
             ShowNotification($"Game loaded! {e.Buildings.Count} buildings restored.");
+        }
+
+        private async void SaveGameAsync()
+        {
+            if (_saveButton != null)
+            {
+                _saveButton.SetEnabled(false);
+                _saveButton.text = "Saving...";
+            }
+
+            try
+            {
+                if (_saveLoad != null)
+                {
+                    await _saveLoad.SaveAsync();
+                }
+            }
+            catch (System.Exception ex)
+            {
+                ShowNotification($"Save failed: {ex.Message}");
+            }
+            finally
+            {
+                if (_saveButton != null)
+                {
+                    _saveButton.SetEnabled(true);
+                    _saveButton.text = "Save";
+                }
+            }
+        }
+
+        private async void LoadGameAsync()
+        {
+            if (_loadButton != null)
+            {
+                _loadButton.SetEnabled(false);
+                _loadButton.text = "Loading...";
+            }
+
+            try
+            {
+                if (_saveLoad != null)
+                {
+                    await _saveLoad.LoadAsync();
+                }
+            }
+            catch (System.Exception ex)
+            {
+                ShowNotification($"Load failed: {ex.Message}");
+            }
+            finally
+            {
+                if (_loadButton != null)
+                {
+                    _loadButton.SetEnabled(true);
+                    _loadButton.text = "Load";
+                }
+            }
+        }
+
+        private void OnDestroy()
+        {
+            _disposables?.Dispose();
         }
     }
 }

@@ -1,11 +1,13 @@
+using System.Collections.Generic;
+using Cysharp.Threading.Tasks;
+using System.Threading;
+using CityBuilder.Application.DTOs;
+
 namespace CityBuilder.Application.Interfaces
 {
-    using System.Collections.Generic;
-    using CityBuilder.Application.DTOs;
-
     public interface ISaveAdapter
     {
-        void Save(List<BuildingDTO> buildings);
-        List<BuildingDTO> Load();
+        UniTask SaveAsync(GameStateDTO gameState, CancellationToken cancellationToken = default);
+        UniTask<GameStateDTO> LoadAsync(CancellationToken cancellationToken = default);
     }
 }

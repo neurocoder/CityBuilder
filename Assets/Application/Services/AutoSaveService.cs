@@ -13,7 +13,7 @@ namespace CityBuilder.Application.Services
         public AutoSaveService(SaveLoadService saveLoad)
         {
             _saveLoad = saveLoad;
-            _intervalMs = Math.Max(1000, 30 * 1000); // 30 seconds default
+            _intervalMs = Math.Max(1000, 30 * 1000);
         }
 
         public void Start()
@@ -36,7 +36,7 @@ namespace CityBuilder.Application.Services
                 while (!token.IsCancellationRequested)
                 {
                     await UniTask.Delay(_intervalMs, cancellationToken: token);
-                    _saveLoad.Save();
+                    await _saveLoad.SaveAsync(token);
                 }
             }
             catch (OperationCanceledException) { }

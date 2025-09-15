@@ -1,7 +1,9 @@
-using System.Collections.Generic;
 using UnityEngine;
+using Cysharp.Threading.Tasks;
+using System.Threading;
 using CityBuilder.Application.DTOs;
 using CityBuilder.Application.Interfaces;
+using System;
 
 namespace CityBuilder.Infrastructure.Adapters
 {
@@ -9,29 +11,51 @@ namespace CityBuilder.Infrastructure.Adapters
     {
         private const string SaveKey = "MiniCity_Save_v1";
 
-        [System.Serializable]
+        [Serializable]
         private class Wrapper
         {
-            public List<BuildingDTO> Buildings = new();
+            public GameStateDTO GameState = new();
         }
 
-        public void Save(List<BuildingDTO> buildings)
+
+        public async UniTask SaveAsync(GameStateDTO gameState, CancellationToken cancellationToken = default)
         {
-            var wrapper = new Wrapper { Buildings = buildings };
-            var json = JsonUtility.ToJson(wrapper);
-            PlayerPrefs.SetString(SaveKey, json);
-            PlayerPrefs.Save();
-            Debug.Log("Saved: " + json);
+            await UniTask.SwitchToMainThread(cancellationToken);
+
+            try
+            {
+                var wrapper = new Wrapper { GameState = gameState };
+                var json = JsonUtility.ToJson(wrapper);
+
+                PlayerPrefs.SetString(SaveKey, json);
+                PlayerPrefs.Save();
+                Debug.Log("Saved: " + json);
+            }
+            catch (System.Exception ex)
+            {
+                Debug.LogError($"Failed to save: {ex.Message}");
+                throw;
+            }
         }
 
-        public List<BuildingDTO> Load()
+        public async UniTask<GameStateDTO> LoadAsync(CancellationToken cancellationToken = default)
         {
-            if (!PlayerPrefs.HasKey(SaveKey))
-                return new List<BuildingDTO>();
+            await UniTask.SwitchToMainThread(cancellationToken);
 
-            var json = PlayerPrefs.GetString(SaveKey);
-            var wrapper = JsonUtility.FromJson<Wrapper>(json);
-            return wrapper?.Buildings ?? new List<BuildingDTO>();
+            try
+            {
+                if (!PlayerPrefs.HasKey(SaveKey))
+                    return new GameStateDTO();
+
+                var json = PlayerPrefs.GetString(SaveKey);
+                var wrapper = JsonUtility.FromJson<Wrapper>(json);
+                return wrapper?.GameState ?? new GameStateDTO();
+            }
+            catch (System.Exception ex)
+            {
+                Debug.LogError($"Failed to load: {ex.Message}");
+                return new GameStateDTO();
+            }
         }
     }
 }

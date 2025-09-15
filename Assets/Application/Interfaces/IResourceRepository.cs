@@ -1,10 +1,15 @@
+using R3;
+using Cysharp.Threading.Tasks;
+using System.Threading;
+
 namespace CityBuilder.Application.Interfaces
 {
     public interface IResourceRepository
     {
         int Gold { get; }
-        bool TrySpend(int amount);
-        void AddGold(int amount);
-        void SetGold(int amount);
+        ReadOnlyReactiveProperty<int> GoldObservable { get; }
+        UniTask<bool> TrySpendAsync(int amount, CancellationToken cancellationToken = default);
+        UniTask AddGoldAsync(int amount, CancellationToken cancellationToken = default);
+        UniTask SetGoldAsync(int amount, CancellationToken cancellationToken = default);
     }
 }

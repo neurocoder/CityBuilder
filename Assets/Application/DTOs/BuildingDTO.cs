@@ -3,7 +3,7 @@ using System;
 
 namespace CityBuilder.Application.DTOs
 {
-    [System.Serializable]
+    [Serializable]
     public class BuildingDTO
     {
         public string Id = string.Empty;

@@ -62,7 +62,6 @@ namespace CityBuilder.Presentation.Input
         {
             if (Mouse.current == null) return;
 
-            // Middle mouse button or right mouse button for camera drag
             bool dragButtonPressed = Mouse.current.middleButton.isPressed || Mouse.current.rightButton.isPressed;
 
             if (Mouse.current.middleButton.wasPressedThisFrame || Mouse.current.rightButton.wasPressedThisFrame)

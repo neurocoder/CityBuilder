@@ -1,5 +1,6 @@
 using System;
 using System.Threading;
+using Cysharp.Threading.Tasks;
 using CityBuilder.Application.Interfaces;
 
 namespace CityBuilder.Application.Services
@@ -9,17 +10,62 @@ namespace CityBuilder.Application.Services
         private readonly IBuildingRepository _repo;
         private readonly IResourceRepository _resources;
         private readonly int _tickMs;
-        private Timer? _timer;
+        private CancellationTokenSource? _cancellationTokenSource;
+        private UniTask? _economyTask;
 
         public EconomyService(IBuildingRepository repo, IResourceRepository resources)
         {
-            _repo = repo; _resources = resources; _tickMs = 1000;
+            _repo = repo;
+            _resources = resources;
+            _tickMs = 1000;
         }
 
-        public void Start() => _timer = new Timer(_ => Tick(), null, _tickMs, _tickMs);
-        public void Stop() { _timer?.Change(Timeout.Infinite, Timeout.Infinite); _timer?.Dispose(); _timer = null; }
+        public void Start()
+        {
+            _cancellationTokenSource = new CancellationTokenSource();
+            _economyTask = RunEconomyLoop(_cancellationTokenSource.Token);
+        }
 
-        private void Tick() { try { int total=0; foreach(var b in _repo.GetAll()) total += b.Level.IncomePerTick; if(total>0) _resources.AddGold(total); } catch { } }
+        public void Stop()
+        {
+            _cancellationTokenSource?.Cancel();
+            _cancellationTokenSource?.Dispose();
+            _cancellationTokenSource = null;
+        }
+
+        private async UniTask RunEconomyLoop(CancellationToken cancellationToken)
+        {
+            while (!cancellationToken.IsCancellationRequested)
+            {
+                try
+                {
+                    await TickAsync(cancellationToken);
+                    await UniTask.Delay(_tickMs, cancellationToken: cancellationToken);
+                }
+                catch (OperationCanceledException)
+                {
+                    break;
+                }
+                catch (Exception)
+                {
+                }
+            }
+        }
+
+        private async UniTask TickAsync(CancellationToken cancellationToken)
+        {
+            int total = 0;
+            foreach (var building in _repo.GetAll())
+            {
+                total += building.Level.IncomePerTick;
+            }
+
+            if (total > 0)
+            {
+                await _resources.AddGoldAsync(total, cancellationToken);
+            }
+        }
+
         public void Dispose() => Stop();
     }
 }

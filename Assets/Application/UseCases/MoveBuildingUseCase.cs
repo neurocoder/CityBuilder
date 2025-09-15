@@ -1,8 +1,9 @@
 using CityBuilder.Application.Interfaces;
 using CityBuilder.Application.Events;
-using CityBuilder.Application.DTOs;
 using CityBuilder.Domain.Entities;
 using System;
+using Cysharp.Threading.Tasks;
+using System.Threading;
 
 namespace CityBuilder.Application.UseCases
 {
@@ -17,20 +18,23 @@ namespace CityBuilder.Application.UseCases
             _repo = repo; _grid = grid; _events = events;
         }
 
-        public bool Execute(Guid id, GridPosition newPos)
-        {
-            var b = _repo.FindById(id);
-            if (b == null) return false;
-            if (!_grid.IsCellFree(newPos)) { _events.Publish(new CellOccupiedEvent(newPos.X, newPos.Y)); return false; }
-            b.MoveTo(newPos);
-            _events.Publish(new BuildingMovedEvent(b));
-            return true;
-        }
 
-        public bool Execute(MoveBuildingDTO dto)
+        public async UniTask<bool> ExecuteAsync(Guid id, GridPosition newPos, CancellationToken cancellationToken = default)
         {
-            var newPos = new GridPosition(dto.NewX, dto.NewY);
-            return Execute(dto.BuildingId, newPos);
+            await UniTask.Yield();
+
+            var building = _repo.FindById(id);
+            if (building == null) return false;
+
+            if (!_grid.IsCellFree(newPos))
+            {
+                _events.Publish(new CellOccupiedEvent(newPos.X, newPos.Y));
+                return false;
+            }
+
+            building.MoveTo(newPos);
+            _events.Publish(new BuildingMovedEvent(building));
+            return true;
         }
     }
 }

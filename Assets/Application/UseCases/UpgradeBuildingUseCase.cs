@@ -3,6 +3,8 @@ using CityBuilder.Application.Events;
 using CityBuilder.Application.DTOs;
 using CityBuilder.Domain.Rules;
 using System;
+using Cysharp.Threading.Tasks;
+using System.Threading;
 
 namespace CityBuilder.Application.UseCases
 {
@@ -14,18 +16,26 @@ namespace CityBuilder.Application.UseCases
 
         public UpgradeBuildingUseCase(IBuildingRepository repo, IResourceRepository resources, IEventBus events) { _repo = repo; _resources = resources; _events = events; }
 
-        public bool Execute(Guid id)
+
+        public async UniTask<bool> ExecuteAsync(Guid id, CancellationToken cancellationToken = default)
         {
-            var b = _repo.FindById(id);
-            if (b == null) return false;
-            var next = UpgradeRules.GetNextLevel(b.Type, b.Level);
-            if (next == null) return false;
-            if (!_resources.TrySpend(next.Cost)) { _events.Publish(new NotEnoughGoldEvent(next.Cost)); return false; }
-            b.UpgradeTo(next);
-            _events.Publish(new BuildingUpgradedEvent(b));
+            await UniTask.Yield();
+            
+            var building = _repo.FindById(id);
+            if (building == null) return false;
+            
+            var nextLevel = UpgradeRules.GetNextLevel(building.Type, building.Level);
+            if (nextLevel == null) return false;
+            
+            if (!await _resources.TrySpendAsync(nextLevel.Cost, cancellationToken)) 
+            { 
+                _events.Publish(new NotEnoughGoldEvent(nextLevel.Cost)); 
+                return false; 
+            }
+            
+            building.UpgradeTo(nextLevel);
+            _events.Publish(new BuildingUpgradedEvent(building));
             return true;
         }
-
-        public bool Execute(UpgradeBuildingDTO dto) { return Execute(dto.BuildingId); }
     }
 }

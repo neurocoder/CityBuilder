@@ -1,9 +1,9 @@
 using CityBuilder.Application.Interfaces;
 using CityBuilder.Application.Events;
-using CityBuilder.Application.DTOs;
 using CityBuilder.Domain.Entities;
 using CityBuilder.Domain.Rules;
-using System;
+using Cysharp.Threading.Tasks;
+using System.Threading;
 
 namespace CityBuilder.Application.UseCases
 {
@@ -19,21 +19,26 @@ namespace CityBuilder.Application.UseCases
             _repo = repo; _grid = grid; _resources = resources; _events = events;
         }
 
-        public bool Execute(BuildingType type, GridPosition pos)
+        public async UniTask<bool> ExecuteAsync(BuildingType type, GridPosition pos, CancellationToken cancellationToken = default)
         {
-            if (!_grid.IsCellFree(pos)) { _events.Publish(new CellOccupiedEvent(pos.X, pos.Y)); return false; }
-            var defaultLevel = UpgradeRules.GetDefaultLevel(type);
-            if (!_resources.TrySpend(defaultLevel.Cost)) { _events.Publish(new NotEnoughGoldEvent(defaultLevel.Cost)); return false; }
-            var b = new Building(type, pos, defaultLevel);
-            _repo.Add(b);
-            _events.Publish(new BuildingPlacedEvent(b));
-            return true;
-        }
+            if (!_grid.IsCellFree(pos))
+            {
+                _events.Publish(new CellOccupiedEvent(pos.X, pos.Y));
+                return false;
+            }
 
-        public bool Execute(PlaceBuildingDTO dto)
-        {
-            var pos = new GridPosition(dto.X, dto.Y);
-            return Execute(dto.Type, pos);
+            var defaultLevel = UpgradeRules.GetDefaultLevel(type);
+
+            if (!await _resources.TrySpendAsync(defaultLevel.Cost, cancellationToken))
+            {
+                _events.Publish(new NotEnoughGoldEvent(defaultLevel.Cost));
+                return false;
+            }
+
+            var building = new Building(type, pos, defaultLevel);
+            _repo.Add(building);
+            _events.Publish(new BuildingPlacedEvent(building));
+            return true;
         }
     }
 }
