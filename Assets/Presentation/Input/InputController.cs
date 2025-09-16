@@ -30,6 +30,9 @@ namespace CityBuilder.Presentation.Input
         public void Construct(PlaceBuildingUseCase place, MoveBuildingUseCase move, RemoveBuildingUseCase remove, UpgradeBuildingUseCase upgrade, IBuildingRepository repo, IEventBus events, CityBuilder.Presentation.Presenters.BuildingPresenter buildingPresenter)
         {
             _placeUseCase = place; _moveUseCase = move; _removeUseCase = remove; _upgradeUseCase = upgrade; _repo = repo; _events = events; _buildingPresenter = buildingPresenter;
+            
+            _events?.Subscribe<BuildingTypeSelectedEvent>(OnBuildingTypeSelected);
+            _events?.Subscribe<MoveModeToggledEvent>(OnMoveModeToggled);
         }
 
         private void Update()
@@ -153,6 +156,32 @@ namespace CityBuilder.Presentation.Input
             if (_selectedBuildingId.HasValue && _removeUseCase != null)
             {
                 await _removeUseCase.ExecuteAsync(_selectedBuildingId.Value);
+                _selectedBuildingId = null;
+                _buildingPresenter?.SetSelectedBuilding(null);
+            }
+        }
+
+        private void OnBuildingTypeSelected(BuildingTypeSelectedEvent e)
+        {
+            _selectedType = e.Type;
+            _isMoveMode = false;
+            _selectedBuildingId = null;
+            _buildingPresenter?.SetSelectedBuilding(null);
+            _previewController?.SetSelectedBuildingType(e.Type);
+        }
+
+        private void OnMoveModeToggled(MoveModeToggledEvent e)
+        {
+            _isMoveMode = e.IsMoveMode;
+            _selectedType = null;
+            
+            if (_isMoveMode)
+            {
+                _previewController?.SetMoveMode(true);
+            }
+            else
+            {
+                _previewController?.SetMoveMode(false);
                 _selectedBuildingId = null;
                 _buildingPresenter?.SetSelectedBuilding(null);
             }
