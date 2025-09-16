@@ -13,13 +13,13 @@
         </ui:VisualElement>
         <ui:VisualElement name="buildingPanel" style="flex-direction: row; margin-bottom: 10px; background-color: rgba(0, 0, 0, 0.5); padding: 5px;">
             <ui:Label text="Buildings:" style="margin-right: 10px; color: white;" />
-            <ui:Button name="houseButton" style="margin-right: 5px; background-color: rgba(0, 100, 0, 0.8);">
+            <ui:Button name="houseButton" text="house" style="margin-right: 5px; background-color: rgba(0, 100, 0, 0.8); width: 51px;">
                 <ui:Label />
             </ui:Button>
-            <ui:Button name="farmButton" style="margin-right: 5px; background-color: rgba(0, 100, 0, 0.8);">
+            <ui:Button name="farmButton" text="farm" style="margin-right: 5px; background-color: rgba(0, 100, 0, 0.8); width: 54px;">
                 <ui:Label />
             </ui:Button>
-            <ui:Button name="mineButton" style="background-color: rgba(0, 100, 0, 0.8);">
+            <ui:Button name="mineButton" text="mine" style="background-color: rgba(0, 100, 0, 0.8); width: 57px;">
                 <ui:Label />
             </ui:Button>
         </ui:VisualElement>
