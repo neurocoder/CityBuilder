@@ -13,6 +13,7 @@ namespace CityBuilder.Infrastructure.DI
     {
         [SerializeField] private PrefabFactory _prefabFactory = null!;
         [SerializeField] private JsonSaveAdapter _saveAdapter = null!;
+        [SerializeField] private GoldIncomeServiceRunner _goldIncomeServiceRunner = null!;
 
         protected override void Configure(IContainerBuilder builder)
         {
@@ -22,6 +23,9 @@ namespace CityBuilder.Infrastructure.DI
             if (_saveAdapter != null)
                 builder.RegisterComponent(_saveAdapter).As<ISaveAdapter>();
 
+            if (_goldIncomeServiceRunner != null)
+                builder.RegisterComponent(_goldIncomeServiceRunner);
+
             builder.Register<InMemoryBuildingRepository>(Lifetime.Singleton).AsImplementedInterfaces();
             builder.Register<InMemoryResourceRepository>(Lifetime.Singleton).AsImplementedInterfaces();
 
@@ -30,6 +34,7 @@ namespace CityBuilder.Infrastructure.DI
             builder.Register<EconomyService>(Lifetime.Singleton).AsSelf();
             builder.Register<SaveLoadService>(Lifetime.Singleton).AsSelf();
             builder.Register<AutoSaveService>(Lifetime.Singleton).AsSelf();
+            builder.Register<GoldIncomeService>(Lifetime.Singleton).AsSelf();
 
             builder.Register<CityBuilder.Application.UseCases.PlaceBuildingUseCase>(Lifetime.Scoped);
             builder.Register<CityBuilder.Application.UseCases.MoveBuildingUseCase>(Lifetime.Scoped);

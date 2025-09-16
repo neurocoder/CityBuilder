@@ -5,6 +5,7 @@ using CityBuilder.Domain.Entities;
 using CityBuilder.Application.UseCases;
 using CityBuilder.Application.Interfaces;
 using VContainer;
+using CityBuilder.Application.Events;
 
 namespace CityBuilder.Presentation.Input
 {
@@ -19,7 +20,6 @@ namespace CityBuilder.Presentation.Input
         private UpgradeBuildingUseCase? _upgradeUseCase;
         private IBuildingRepository? _repo;
         private IEventBus? _events;
-        private UI.HudPresenter? _hudPresenter;
         private Presenters.BuildingPresenter? _buildingPresenter;
 
         private BuildingType? _selectedType;
@@ -27,9 +27,9 @@ namespace CityBuilder.Presentation.Input
         private bool _isMoveMode;
 
         [Inject]
-        public void Construct(PlaceBuildingUseCase place, MoveBuildingUseCase move, RemoveBuildingUseCase remove, UpgradeBuildingUseCase upgrade, IBuildingRepository repo, IEventBus events, CityBuilder.Presentation.UI.HudPresenter hudPresenter, CityBuilder.Presentation.Presenters.BuildingPresenter buildingPresenter)
+        public void Construct(PlaceBuildingUseCase place, MoveBuildingUseCase move, RemoveBuildingUseCase remove, UpgradeBuildingUseCase upgrade, IBuildingRepository repo, IEventBus events, CityBuilder.Presentation.Presenters.BuildingPresenter buildingPresenter)
         {
-            _placeUseCase = place; _moveUseCase = move; _removeUseCase = remove; _upgradeUseCase = upgrade; _repo = repo; _events = events; _hudPresenter = hudPresenter; _buildingPresenter = buildingPresenter;
+            _placeUseCase = place; _moveUseCase = move; _removeUseCase = remove; _upgradeUseCase = upgrade; _repo = repo; _events = events; _buildingPresenter = buildingPresenter;
         }
 
         private void Update()
@@ -62,14 +62,14 @@ namespace CityBuilder.Presentation.Input
             if (ms.leftButton.wasPressedThisFrame) HandleLeftClickAsync(cellX, cellY);
         }
 
-        private void SelectType(BuildingType type)
+        public void SelectType(BuildingType type)
         {
             _selectedType = type;
             _isMoveMode = false;
             _selectedBuildingId = null;
-            _hudPresenter?.SelectBuildingType(type);
             _buildingPresenter?.SetSelectedBuilding(null);
             _previewController?.SetSelectedBuildingType(type);
+            _events?.Publish(new BuildingTypeSelectedEvent(type));
         }
         private async void HandleLeftClickAsync(int x, int y)
         {
@@ -98,7 +98,6 @@ namespace CityBuilder.Presentation.Input
             if (building != null)
             {
                 _selectedBuildingId = building.Id;
-                _hudPresenter?.SetSelectedBuilding(building.Id);
                 _buildingPresenter?.SetSelectedBuilding(building.Id);
                 Debug.Log($"Selected building at position ({x}, {y})");
                 return;
@@ -111,13 +110,13 @@ namespace CityBuilder.Presentation.Input
             }
         }
 
-        private void ToggleMoveMode()
+        public void ToggleMoveMode()
         {
             if (_selectedBuildingId.HasValue)
             {
                 _isMoveMode = !_isMoveMode;
                 _selectedType = null;
-                
+
                 if (_isMoveMode)
                 {
                     _previewController?.SetMoveMode(true);
@@ -128,6 +127,7 @@ namespace CityBuilder.Presentation.Input
                     _selectedBuildingId = null;
                     _buildingPresenter?.SetSelectedBuilding(null);
                 }
+                _events?.Publish(new MoveModeToggledEvent(_isMoveMode));
                 Debug.Log(_isMoveMode ? "Move mode ON - Click on empty cell to move building" : "Move mode OFF");
             }
             else

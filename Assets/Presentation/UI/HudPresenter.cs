@@ -23,7 +23,7 @@ namespace CityBuilder.Presentation.UI
         private RemoveBuildingUseCase? _removeUseCase;
         private UpgradeBuildingUseCase? _upgradeUseCase;
         private Presenters.BuildingPresenter? _buildingPresenter;
-        
+
         private UIDocument? _uiDocument;
         private Label? _goldLabel;
         private Button? _saveButton;
@@ -31,10 +31,6 @@ namespace CityBuilder.Presentation.UI
         private Button? _houseButton;
         private Button? _farmButton;
         private Button? _mineButton;
-        private Label? _selectedBuildingLabel;
-        private Button? _moveButton;
-        private Button? _upgradeButton;
-        private Button? _deleteButton;
         private Label? _notificationLabel;
 
         private BuildingType? _selectedType;
@@ -43,11 +39,11 @@ namespace CityBuilder.Presentation.UI
         private readonly CompositeDisposable _disposables = new();
 
         [Inject]
-        public void Construct(IResourceRepository resources, SaveLoadService saveLoad, IEventBus events, IBuildingRepository repo, 
-            PlaceBuildingUseCase placeUseCase, MoveBuildingUseCase moveUseCase, RemoveBuildingUseCase removeUseCase, UpgradeBuildingUseCase upgradeUseCase, CityBuilder.Presentation.Presenters.BuildingPresenter buildingPresenter)
-        { 
-            _resources = resources; 
-            _saveLoad = saveLoad; 
+        public void Construct(IResourceRepository resources, SaveLoadService saveLoad, IEventBus events, IBuildingRepository repo,
+PlaceBuildingUseCase placeUseCase, MoveBuildingUseCase moveUseCase, RemoveBuildingUseCase removeUseCase, UpgradeBuildingUseCase upgradeUseCase, CityBuilder.Presentation.Presenters.BuildingPresenter buildingPresenter)
+        {
+            _resources = resources;
+            _saveLoad = saveLoad;
             _events = events;
             _repo = repo;
             _placeUseCase = placeUseCase;
@@ -61,17 +57,13 @@ namespace CityBuilder.Presentation.UI
         {
             _uiDocument = GetComponent<UIDocument>();
             var root = _uiDocument.rootVisualElement;
-            
+
             _goldLabel = root.Q<Label>("goldLabel");
             _saveButton = root.Q<Button>("saveButton");
             _loadButton = root.Q<Button>("loadButton");
             _houseButton = root.Q<Button>("houseButton");
             _farmButton = root.Q<Button>("farmButton");
             _mineButton = root.Q<Button>("mineButton");
-            _selectedBuildingLabel = root.Q<Label>("selectedBuildingLabel");
-            _moveButton = root.Q<Button>("moveButton");
-            _upgradeButton = root.Q<Button>("upgradeButton");
-            _deleteButton = root.Q<Button>("deleteButton");
             _notificationLabel = root.Q<Label>("notificationLabel");
 
             _saveButton?.RegisterCallback<ClickEvent>(evt => SaveGameAsync());
@@ -79,9 +71,6 @@ namespace CityBuilder.Presentation.UI
             _houseButton?.RegisterCallback<ClickEvent>(evt => SelectBuildingType(BuildingType.House));
             _farmButton?.RegisterCallback<ClickEvent>(evt => SelectBuildingType(BuildingType.Farm));
             _mineButton?.RegisterCallback<ClickEvent>(evt => SelectBuildingType(BuildingType.Mine));
-            _moveButton?.RegisterCallback<ClickEvent>(evt => ToggleMoveMode());
-            _upgradeButton?.RegisterCallback<ClickEvent>(evt => UpgradeSelectedBuilding());
-            _deleteButton?.RegisterCallback<ClickEvent>(evt => DeleteSelectedBuilding());
 
             if (_resources != null)
             {
@@ -98,6 +87,8 @@ namespace CityBuilder.Presentation.UI
             _events?.Subscribe<CellOccupiedEvent>(OnCellOccupied);
             _events?.Subscribe<GameSavedEvent>(OnGameSaved);
             _events?.Subscribe<GameLoadedEvent>(OnGameLoaded);
+            _events?.Subscribe<BuildingTypeSelectedEvent>(OnBuildingTypeSelected);
+            _events?.Subscribe<MoveModeToggledEvent>(OnMoveModeToggled);
         }
 
         private void UpdateGoldDisplay(int gold)
@@ -112,6 +103,7 @@ namespace CityBuilder.Presentation.UI
             _isMoveMode = false;
             _selectedBuildingId = null;
             _buildingPresenter?.SetSelectedBuilding(null);
+            _events?.Publish(new BuildingTypeSelectedEvent(type));
             UpdateUI();
             ShowNotification($"Selected {type} for building");
         }
@@ -127,6 +119,7 @@ namespace CityBuilder.Presentation.UI
                     _selectedBuildingId = null;
                     _buildingPresenter?.SetSelectedBuilding(null);
                 }
+                _events?.Publish(new MoveModeToggledEvent(_isMoveMode));
                 UpdateUI();
                 ShowNotification(_isMoveMode ? "Move mode ON - Click on empty cell to move building" : "Move mode OFF");
             }
@@ -167,31 +160,14 @@ namespace CityBuilder.Presentation.UI
             UpdateButtonState(_houseButton, _selectedType == BuildingType.House);
             UpdateButtonState(_farmButton, _selectedType == BuildingType.Farm);
             UpdateButtonState(_mineButton, _selectedType == BuildingType.Mine);
-
-            if (_selectedBuildingId.HasValue && _repo != null)
-            {
-                var building = _repo.FindById(_selectedBuildingId.Value);
-                if (building != null)
-                {
-                    _selectedBuildingLabel.text = $"Selected: {building.Type} Level {building.Level.Level}";
-                }
-            }
-            else
-            {
-                _selectedBuildingLabel.text = "No building selected";
-            }
-
-            _moveButton.SetEnabled(_selectedBuildingId.HasValue);
-            _upgradeButton.SetEnabled(_selectedBuildingId.HasValue);
-            _deleteButton.SetEnabled(_selectedBuildingId.HasValue);
         }
 
         private void UpdateButtonState(Button? button, bool isSelected)
         {
             if (button != null)
             {
-                button.style.backgroundColor = isSelected ? 
-                    new StyleColor(new Color(0, 0.8f, 0, 0.8f)) : 
+                button.style.backgroundColor = isSelected ?
+                    new StyleColor(new Color(0, 0.8f, 0, 0.8f)) :
                     new StyleColor(new Color(0, 0.4f, 0, 0.8f));
             }
         }
@@ -318,6 +294,26 @@ namespace CityBuilder.Presentation.UI
                     _loadButton.text = "Load";
                 }
             }
+        }
+
+        private void OnBuildingTypeSelected(BuildingTypeSelectedEvent e)
+        {
+            _selectedType = e.Type;
+            _isMoveMode = false;
+            _selectedBuildingId = null;
+            _buildingPresenter?.SetSelectedBuilding(null);
+            UpdateUI();
+        }
+
+        private void OnMoveModeToggled(MoveModeToggledEvent e)
+        {
+            _isMoveMode = e.IsMoveMode;
+            if (!_isMoveMode)
+            {
+                _selectedBuildingId = null;
+                _buildingPresenter?.SetSelectedBuilding(null);
+            }
+            UpdateUI();
         }
 
         private void OnDestroy()

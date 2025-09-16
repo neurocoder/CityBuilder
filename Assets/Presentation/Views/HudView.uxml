@@ -23,20 +23,6 @@
                 <ui:Label />
             </ui:Button>
         </ui:VisualElement>
-        <ui:VisualElement name="propertiesPanel" style="background-color: rgba(0, 0, 0, 0.7); padding: 10px; margin-bottom: 10px;">
-            <ui:Label name="selectedBuildingLabel" text="No building selected" style="color: white; font-size: 16px; margin-bottom: 5px;" />
-            <ui:VisualElement name="buildingActions" style="flex-direction: row;">
-                <ui:Button name="moveButton" style="margin-right: 5px; background-color: rgba(0, 0, 100, 0.8);">
-                    <ui:Label />
-                </ui:Button>
-                <ui:Button name="upgradeButton" style="margin-right: 5px; background-color: rgba(100, 0, 100, 0.8);">
-                    <ui:Label />
-                </ui:Button>
-                <ui:Button name="deleteButton" style="background-color: rgba(100, 0, 0, 0.8);">
-                    <ui:Label />
-                </ui:Button>
-            </ui:VisualElement>
-        </ui:VisualElement>
         <ui:VisualElement name="notificationsPanel" style="background-color: rgba(0, 0, 0, 0.5); padding: 5px;">
             <ui:Label name="notificationLabel" style="color: white; font-size: 14px;" />
         </ui:VisualElement>
