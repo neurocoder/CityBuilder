@@ -13,6 +13,7 @@ namespace CityBuilder.Presentation.DI
         [SerializeField] private BuildingPresenter buildingPresenter = null!;
         [SerializeField] private InputController inputController = null!;
         [SerializeField] private CameraController cameraController = null!;
+        [SerializeField] private BuildingPreviewController buildingPreviewController = null!;
 
         protected override void Configure(IContainerBuilder builder)
         {
@@ -27,6 +28,9 @@ namespace CityBuilder.Presentation.DI
 
             if (cameraController != null)
                 builder.RegisterComponent(cameraController);
+
+            if (buildingPreviewController != null)
+                builder.RegisterComponent(buildingPreviewController);
         }
     }
 }

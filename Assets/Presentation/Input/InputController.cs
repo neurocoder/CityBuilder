@@ -11,7 +11,7 @@ namespace CityBuilder.Presentation.Input
     public class InputController : MonoBehaviour
     {
         [SerializeField] private Camera _mainCamera = null!;
-        [SerializeField] private GameObject _tileSelector = null!;
+        [SerializeField] private BuildingPreviewController _previewController = null!;
 
         private PlaceBuildingUseCase? _placeUseCase;
         private MoveBuildingUseCase? _moveUseCase;
@@ -49,7 +49,15 @@ namespace CityBuilder.Presentation.Input
             var world = _mainCamera.ScreenToWorldPoint(new Vector3(mp.x, mp.y, -_mainCamera.transform.position.z));
             var cellX = Mathf.FloorToInt(world.x);
             var cellY = Mathf.FloorToInt(world.y);
-            if (_tileSelector != null) _tileSelector.transform.position = new Vector3(cellX + 0.5f, cellY + 0.5f, 0f);
+
+            if ((_selectedType.HasValue && !_isMoveMode) || (_isMoveMode && _selectedBuildingId.HasValue))
+            {
+                _previewController?.UpdatePreview(world);
+            }
+            else
+            {
+                _previewController?.HidePreview();
+            }
 
             if (ms.leftButton.wasPressedThisFrame) HandleLeftClickAsync(cellX, cellY);
         }
@@ -61,6 +69,7 @@ namespace CityBuilder.Presentation.Input
             _selectedBuildingId = null;
             _hudPresenter?.SelectBuildingType(type);
             _buildingPresenter?.SetSelectedBuilding(null);
+            _previewController?.SetSelectedBuildingType(type);
         }
         private async void HandleLeftClickAsync(int x, int y)
         {
@@ -108,8 +117,14 @@ namespace CityBuilder.Presentation.Input
             {
                 _isMoveMode = !_isMoveMode;
                 _selectedType = null;
-                if (!_isMoveMode)
+                
+                if (_isMoveMode)
                 {
+                    _previewController?.SetMoveMode(true);
+                }
+                else
+                {
+                    _previewController?.SetMoveMode(false);
                     _selectedBuildingId = null;
                     _buildingPresenter?.SetSelectedBuilding(null);
                 }
